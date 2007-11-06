@@ -1,4 +1,9 @@
 Revision history for Log-Syslog-Abstract
 
+1.001	Tue, 06 Nov 2007 12:17:47 -0500 dmo
+
+	(bugfix) Module would fail to load with older versions of Sys::Syslog
+	that didn't support :macros
+
 1.000	Fri, 13 Apr 2007 09:51:49 -0400 dmo
 	First public version released to CPAN

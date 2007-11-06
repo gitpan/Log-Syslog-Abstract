@@ -4,7 +4,7 @@ use strict;
 use Carp;
 
 use vars qw( $VERSION @ISA @EXPORT_OK );
-$VERSION = '1.000';
+$VERSION = '1.001';
 
 require Exporter;
 @ISA = qw( Exporter );  ## no critic(ProhibitExplicitISA)
@@ -17,25 +17,19 @@ require Exporter;
 
 sub import
 {
-	my $chosen_module;
-
-	for my $syslog_module qw( Unix::Syslog Sys::Syslog ) {
-		eval qq{ use $syslog_module qw(:macros); }; ## no critic (StringyEval)
-		if( ! $@ ) {  ## no critic (PunctuationVars)
-			$chosen_module = $syslog_module;
-			last;
-		} 
-	}
-
-	if( ! $chosen_module ) {
-		croak q{Unable to detect either Unix::Syslog or Sys::Syslog};
-	}
-
 	my ($openlog, $syslog, $closelog);
-	if( $chosen_module eq 'Unix::Syslog' ) {
+
+	# Try Unix::Syslog first, then Sys::Syslog
+	eval qq{use Unix::Syslog qw( :macros ); }; ## no critic (StringyEval)
+	if( ! $@ ) {  ## no critic (PunctuationVars)
 		($openlog, $syslog, $closelog) = _wrap_for_unix_syslog();
 	} else {
-		($openlog, $syslog, $closelog) = _wrap_for_sys_syslog();
+		eval qq{use Sys::Syslog ();}; ## no critic (StringyEval)
+		if( ! $@ ) {  ## no critic (PunctuationVars)
+			($openlog, $syslog, $closelog) = _wrap_for_sys_syslog();
+		} else {
+			croak q{Unable to detect either Unix::Syslog or Sys::Syslog};
+		}
 	}
 
 	no warnings 'once';  ## no critic (NoWarnings)
@@ -48,10 +42,10 @@ sub import
 
 sub _wrap_for_unix_syslog
 {
-	
+
 	my $openlog = sub {
 		my ($id, $flags, $facility) = @_;
-	
+
 		## no critic (ProhibitPostfixControls)
 		croak q{first argument must be an identifier string} unless defined $id;
 		croak q{second argument must be flag string} unless defined $flags;
@@ -76,7 +70,7 @@ sub _wrap_for_unix_syslog
 
 sub _wrap_for_sys_syslog
 {
-	
+
 	my $openlog  = sub {
 		return Sys::Syslog::openlog(@_);
 	};
@@ -100,7 +94,7 @@ sub _wrap_for_sys_syslog
 		if( ! defined $flag_map ) {
 			$flag_map = _make_flag_map();
 		}
-		
+
 		my $num = 0;
 		foreach my $thing (split(/,/, $flags)) {
 			if ( ! exists $flag_map->{$thing} ) {
@@ -122,7 +116,7 @@ sub _wrap_for_sys_syslog
 
 {
 	my $fac_map;
-	
+
 	sub _convert_facility
 	{
 		my($facility) = @_;
@@ -139,7 +133,7 @@ sub _wrap_for_sys_syslog
 			$num |= $fac_map->{$thing};
 		}
 		return $num;
-		
+
 	}
 
 	sub _make_fac_map
@@ -198,14 +192,14 @@ Version 1.000
     openlog( 'myapp', 'pid,ndelay', 'local0' );
     ...
     syslog('info', '%s: %s', 'Something bad happened', $!);
-    ... 
+    ...
     closelog();
-    
+
 =head1 DESCRIPTION
 
 This module provides the bare minimum common API to L<Unix::Syslog> and
 L<Sys::Syslog>, using whichever one happens to be available.
-    
+
 =head1 FUNCTIONS
 
 =head2 openlog ( $ident, $options, $facility )
@@ -281,7 +275,7 @@ I<$facility> is a string indicating the syslog facility to be used.  Valid value
 
 =head2 syslog ( $priority, $format, @args )
 
-Generates a log message and passes it to the appropriate syslog backend.  
+Generates a log message and passes it to the appropriate syslog backend.
 
 I<$priority> should be a string containing one of the valid priority names:
 
@@ -317,7 +311,7 @@ I<$format> is a format string in the style of printf(3)
 
 I<@args> is a list of values that will replace the placeholders in $format
 
-=head2 closelog ( ) 
+=head2 closelog ( )
 
 Closes the connection to syslog.
 
@@ -339,7 +333,7 @@ Dave O'Neill, C<< <dmo at roaringpenguin.com> >>
 
 =over 4
 
-=item * 
+=item *
 
 Currently, no validation is performed on the strings provided for
 options, facility names, or message priority.  Bogus data may give

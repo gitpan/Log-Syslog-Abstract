@@ -1,8 +1,8 @@
+.gitignore
 Changes
 lib/Log/Syslog/Abstract.pm
 Makefile.PL
 MANIFEST
-META.yml			# Will be created by "make dist"
 README
 t/00-load.t
 t/boilerplate.t
@@ -10,5 +10,8 @@ t/kwalitee.t
 t/no_syslog_modules.t
 t/pod-coverage.t
 t/pod.t
-t/sys_syslog.t
-t/unix_syslog.t
+t/sys_syslog_fake.t
+t/sys_syslog_real.t
+t/unix_syslog_fake.t
+t/unix_syslog_real.t
+META.yml                                 Module meta-data (added by MakeMaker)

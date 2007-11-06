@@ -1,13 +1,16 @@
-# http://module-build.sourceforge.net/META-spec.html
-#XXXXXXX This is a prototype!!!  It will change in the future!!! XXXXX#
-name:         Log-Syslog-Abstract
-version:      1.000
-version_from: lib/Log/Syslog/Abstract.pm
-installdirs:  site
-requires:
+--- #YAML:1.0
+name:                Log-Syslog-Abstract
+version:             1.001
+abstract:            Use any available syslog API
+license:             ~
+generated_by:        ExtUtils::MakeMaker version 6.32
+distribution_type:   module
+requires:     
     Devel::Hide:                   0
     Test::Exception:               0
     Test::More:                    0
-
-distribution_type: module
-generated_by: ExtUtils::MakeMaker version 6.17
+meta-spec:
+    url:     http://module-build.sourceforge.net/META-spec-v1.2.html
+    version: 1.2
+author:
+    - Dave O'Neill <dmo@roaringpenguin.com>
