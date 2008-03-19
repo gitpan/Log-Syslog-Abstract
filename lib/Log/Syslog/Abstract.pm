@@ -3,19 +3,21 @@ use warnings;
 use strict;
 use Carp;
 
+use 5.006;
 use vars qw( $VERSION @ISA @EXPORT_OK );
-$VERSION = '1.001';
+$VERSION = '1.100';
 
-require Exporter;
-@ISA = qw( Exporter );  ## no critic(ProhibitExplicitISA)
+use Sub::Exporter -setup => {
+	exports => [ qw(
+		openlog
+		syslog
+		closelog
+	) ],
+};
 
-@EXPORT_OK = qw(
-	openlog
-	syslog
-	closelog
-);
+_build_log_methods();
 
-sub import
+sub _build_log_methods
 {
 	my ($openlog, $syslog, $closelog);
 
@@ -36,8 +38,6 @@ sub import
 	*openlog = $openlog;
 	*syslog = $syslog;
 	*closelog = $closelog;
-
-	return __PACKAGE__->export_to_level(1, @_);
 }
 
 sub _wrap_for_unix_syslog
@@ -322,8 +322,10 @@ line, or call with package-qualified name.
 
 =head1 DEPENDENCIES
 
-At least one of L<Unix::Syslog> or L<Sys::Syslog> must be present, or
-Log::Syslog::Abstract will die at use() time.
+L<Sub::Exporter>.
+
+Also, at least one of L<Unix::Syslog> or L<Sys::Syslog> must be
+present, or Log::Syslog::Abstract will die at use() time.
 
 =head1 AUTHOR
 
@@ -377,7 +379,7 @@ L<http://search.cpan.org/dist/Log-Syslog-Abstract>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2007 Dave O'Neill, all rights reserved
+Copyright 2007 Dave O'Neill
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

@@ -1,16 +1,25 @@
---- #YAML:1.0
-name:                Log-Syslog-Abstract
-version:             1.001
-abstract:            Use any available syslog API
-license:             ~
-generated_by:        ExtUtils::MakeMaker version 6.32
-distribution_type:   module
-requires:     
-    Devel::Hide:                   0
-    Test::Exception:               0
-    Test::More:                    0
-meta-spec:
-    url:     http://module-build.sourceforge.net/META-spec-v1.2.html
-    version: 1.2
-author:
-    - Dave O'Neill <dmo@roaringpenguin.com>
+--- 
+abstract: Use any available syslog API
+author: Dave O'Neill, C<< <dmo at roaringpenguin.com> >>
+build_requires: 
+  Devel::Hide: 0
+  Test::Exception: 0
+  Test::More: 0
+distribution_type: module
+generated_by: Module::Install version 0.67
+license: perl
+meta-spec: 
+  url: http://module-build.sourceforge.net/META-spec-v1.3.html
+  version: 1.3
+name: Log-Syslog-Abstract
+no_index: 
+  directory: 
+    - inc
+    - t
+recommends: 
+  Sys::Syslog: 0
+  Unix::Syslog: 0
+requires: 
+  Sub::Exporter: 0
+  perl: 5.6.0
+version: 1.100

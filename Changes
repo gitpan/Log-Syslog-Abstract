@@ -1,5 +1,9 @@
 Revision history for Log-Syslog-Abstract
 
+1.100	Wed, 19 Mar 2008 17:16:30 -0400
+	(enhancement) Now uses Sub::Exporter instead of plain old Exporter,
+	mostly for the ability to rename methods at import-time.
+
 1.001	Tue, 06 Nov 2007 12:17:47 -0500 dmo
 
 	(bugfix) Module would fail to load with older versions of Sys::Syslog

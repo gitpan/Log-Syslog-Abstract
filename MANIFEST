@@ -1,8 +1,17 @@
-.gitignore
 Changes
+inc/Module/Install.pm
+inc/Module/Install/Base.pm
+inc/Module/Install/Can.pm
+inc/Module/Install/Fetch.pm
+inc/Module/Install/Makefile.pm
+inc/Module/Install/Metadata.pm
+inc/Module/Install/Win32.pm
+inc/Module/Install/WriteAll.pm
 lib/Log/Syslog/Abstract.pm
 Makefile.PL
 MANIFEST
+MANIFEST.SKIP
+META.yml
 README
 t/00-load.t
 t/boilerplate.t
@@ -10,8 +19,8 @@ t/kwalitee.t
 t/no_syslog_modules.t
 t/pod-coverage.t
 t/pod.t
+t/renaming.t
 t/sys_syslog_fake.t
 t/sys_syslog_real.t
 t/unix_syslog_fake.t
 t/unix_syslog_real.t
-META.yml                                 Module meta-data (added by MakeMaker)
