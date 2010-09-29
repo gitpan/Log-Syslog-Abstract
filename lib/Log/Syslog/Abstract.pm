@@ -4,40 +4,37 @@ use strict;
 use Carp;
 
 use 5.006;
-use vars qw( $VERSION @ISA @EXPORT_OK );
-$VERSION = '1.100';
+use vars qw( $VERSION );
+$VERSION = '1.101';
 
 use Sub::Exporter -setup => {
-	exports => [ qw(
-		openlog
-		syslog
-		closelog
-	) ],
+	exports => [
+		qw( openlog syslog closelog ),
+	],
+	generator => \&_build_log_methods,
 };
 
-_build_log_methods();
-
+my %log_subs;
 sub _build_log_methods
 {
-	my ($openlog, $syslog, $closelog);
+	my($args) = @_;
 
-	# Try Unix::Syslog first, then Sys::Syslog
-	eval qq{use Unix::Syslog qw( :macros ); }; ## no critic (StringyEval)
-	if( ! $@ ) {  ## no critic (PunctuationVars)
-		($openlog, $syslog, $closelog) = _wrap_for_unix_syslog();
-	} else {
-		eval qq{use Sys::Syslog ();}; ## no critic (StringyEval)
+	if( ! exists $log_subs{$args->{name}} ) {
+		# Try Unix::Syslog first, then Sys::Syslog
+		eval qq{use Unix::Syslog qw( :macros ); }; ## no critic (StringyEval)
 		if( ! $@ ) {  ## no critic (PunctuationVars)
-			($openlog, $syslog, $closelog) = _wrap_for_sys_syslog();
+			@log_subs{'openlog','syslog','closelog'} = _wrap_for_unix_syslog();
 		} else {
-			croak q{Unable to detect either Unix::Syslog or Sys::Syslog};
+			eval qq{use Sys::Syslog ();}; ## no critic (StringyEval)
+			if( ! $@ ) {  ## no critic (PunctuationVars)
+				@log_subs{'openlog','syslog','closelog'} = _wrap_for_sys_syslog();
+			} else {
+				croak q{Unable to detect either Unix::Syslog or Sys::Syslog};
+			}
 		}
 	}
 
-	no warnings 'once';  ## no critic (NoWarnings)
-	*openlog = $openlog;
-	*syslog = $syslog;
-	*closelog = $closelog;
+	return $log_subs{$args->{name}};
 }
 
 sub _wrap_for_unix_syslog
@@ -72,6 +69,11 @@ sub _wrap_for_sys_syslog
 {
 
 	my $openlog  = sub {
+		if( $Sys::Syslog::VERSION < 0.16 ) {
+			# Older Sys::Syslog versions still need
+			# setlogsock().  RHEL5 still ships with 0.13 :(
+			Sys::Syslog::setlogsock([ 'unix', 'tcp', 'udp' ]);
+		}
 		return Sys::Syslog::openlog(@_);
 	};
 	my $syslog   = sub {
@@ -136,41 +138,45 @@ sub _wrap_for_sys_syslog
 
 	}
 
+	my %special = (
+		error => 'err',
+		panic => 'emerg',
+	);
+
+	# Some of the Unix::Syslog 'macros' tag exports aren't
+	# constants, so we need to ignore them if found.
+	my %blacklisted = map { $_ => 1 } qw(
+		LOG_MASK
+		LOG_UPTO
+		LOG_PRI
+		LOG_MAKEPRI
+		LOG_FAC
+	);
+
 	sub _make_fac_map
 	{
-		return {
-			emerg => Unix::Syslog::LOG_EMERG(),
-			panic => Unix::Syslog::LOG_EMERG(),
-			alert => Unix::Syslog::LOG_ALERT(),
-			crit => Unix::Syslog::LOG_CRIT(),
-			error => Unix::Syslog::LOG_ERR(),
-			'err' => Unix::Syslog::LOG_ERR(),
-			warning => Unix::Syslog::LOG_WARNING(),
-			notice => Unix::Syslog::LOG_NOTICE(),
-			info => Unix::Syslog::LOG_INFO(),
-			debug => Unix::Syslog::LOG_DEBUG(),
+		my %map;
 
-			kern => Unix::Syslog::LOG_KERN(),
-			user => Unix::Syslog::LOG_USER(),
-			mail => Unix::Syslog::LOG_MAIL(),
-			daemon => Unix::Syslog::LOG_DAEMON(),
-			auth => Unix::Syslog::LOG_AUTH(),
-			syslog => Unix::Syslog::LOG_SYSLOG(),
-			lpr => Unix::Syslog::LOG_LPR(),
-			news => Unix::Syslog::LOG_NEWS(),
-			uucp => Unix::Syslog::LOG_UUCP(),
-			cron => Unix::Syslog::LOG_CRON(),
-			authpriv => Unix::Syslog::LOG_AUTHPRIV(),
-			ftp => Unix::Syslog::LOG_FTP(),
-			local0 => Unix::Syslog::LOG_LOCAL0(),
-			local1 => Unix::Syslog::LOG_LOCAL1(),
-			local2 => Unix::Syslog::LOG_LOCAL2(),
-			local3 => Unix::Syslog::LOG_LOCAL3(),
-			local4 => Unix::Syslog::LOG_LOCAL4(),
-			local5 => Unix::Syslog::LOG_LOCAL5(),
-			local6 => Unix::Syslog::LOG_LOCAL6(),
-			local7 => Unix::Syslog::LOG_LOCAL7(),
-		};
+		# Ugh.  Make sure we map only the available constants
+		# on this platform.  Some are not defined properly on
+		# all platforms.
+		foreach my $constant ( grep { /^LOG_/ && !exists $blacklisted{$_} } @{ $Unix::Syslog::EXPORT_TAGS{macros}} ) {
+			my $name = lc $constant;
+			$name =~ s/^log_//;
+
+			my $value = eval "Unix::Syslog::$constant()";
+			if( defined $value ) {
+				$map{$name} = $value;
+			}
+		}
+
+		# Some strings supported by Sys::Syslog don't
+		# correspond to a Unix::Syslog LOG_XXXX constant.
+		while( my($new_key, $existing_key) = each %special ) {
+			$map{$new_key} = $map{$existing_key};
+		}
+
+		return \%map;
 	}
 }
 

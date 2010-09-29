@@ -8,10 +8,13 @@ BEGIN { use Devel::Hide qw( Unix::Syslog ); }
 # Fake up a Sys::Syslog class
 BEGIN { $INC{'Sys/Syslog.pm'} = 1; }
 package Sys::Syslog;
+our $VERSION = '0.00';
 sub _stub    { die [ q{Sys::Syslog stub}, @_ ] }
-*openlog  = \&_stub;
-*syslog   = \&_stub;
-*closelog = \&_stub;
+*openlog    = \&_stub;
+*syslog     = \&_stub;
+*closelog   = \&_stub;
+*setlogsock = sub { };
+
 
 package main;
 

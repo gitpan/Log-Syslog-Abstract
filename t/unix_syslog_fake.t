@@ -1,14 +1,14 @@
 #!/usr/bin/perl -w
-use Test::More tests => 47;
-use Test::Exception;
 
 # Fake up a Unix::Syslog class
 BEGIN { $INC{'Unix/Syslog.pm'} = 1; }
 package Unix::Syslog;
 sub _stub    { die [ q{Unix::Syslog stub}, @_ ] }
+no warnings 'once';
 *openlog  = \&_stub;
 *syslog   = \&_stub;
 *closelog = \&_stub;
+use warnings 'once';
 
 # Constants borrowed from sys/syslog.h on Linux.  May not be the same
 # on all platforms, but for testing purposes it should be fine.
@@ -45,18 +45,26 @@ sub LOG_LOCAL5   { 21<<3 };
 sub LOG_LOCAL6   { 22<<3 };
 sub LOG_LOCAL7   { 23<<3 };
 
+our %EXPORT_TAGS = ("macros" => [qw(LOG_EMERG LOG_ALERT LOG_CRIT LOG_ERR
+				LOG_WARNING LOG_NOTICE LOG_INFO LOG_DEBUG
+				LOG_KERN LOG_USER LOG_MAIL LOG_DAEMON LOG_AUTH
+				LOG_SYSLOG LOG_LPR LOG_NEWS LOG_UUCP LOG_CRON
+				LOG_AUTHPRIV LOG_FTP LOG_LOCAL0 LOG_LOCAL1
+				LOG_LOCAL2 LOG_LOCAL3 LOG_LOCAL4 LOG_LOCAL5
+				LOG_LOCAL6 LOG_LOCAL7 LOG_PID LOG_CONS
+				LOG_ODELAY LOG_NDELAY LOG_NOWAIT LOG_PERROR
+				LOG_NFACILITIES LOG_FACMASK LOG_FAC LOG_MASK
+				LOG_PRI LOG_UPTO LOG_MAKEPRI)],
+);
+
 package main;
 
-BEGIN { use_ok('Log::Syslog::Abstract', qw( openlog syslog closelog )) };
+use Test::Exception;
+use vars qw($FAKE_TESTS);
+$FAKE_TESTS = 6;
 
-dies_ok { openlog() } 'openlog with no args dies';
-like ( $@, qr/first argument must be an identifier string/, '... with expected error');
-
-dies_ok { openlog('wookie') } 'openlog with one arg dies';
-like ( $@, qr/second argument must be flag string/, '... with expected error');
-
-dies_ok { openlog('wookie', 'pid,ndelay') } 'openlog with 2 args dies';
-like ( $@, qr/third argument must be a facility string/, '... with expected error');
+# Perform same tests as real module
+require 't/unix_syslog_real.t';
 
 dies_ok { openlog('wookie', 'pid,ndelay', 'mail') } 'openlog hits our stub'; 
 is_deeply( $@, [ q{Unix::Syslog stub}, 'wookie', Unix::Syslog::LOG_PID | Unix::Syslog::LOG_NDELAY, Unix::Syslog::LOG_MAIL ], '... got expected data via the stub');
@@ -66,59 +74,3 @@ is_deeply( $@, [ q{Unix::Syslog stub}, Unix::Syslog::LOG_ERR, '%s', 'Our wookie 
 
 dies_ok { closelog() } 'closelog hits our stub'; 
 is_deeply( $@, [ q{Unix::Syslog stub} ], '... got expected data via the stub');
-
-# Only check mapping of values if we have a real Unix::Syslog on this
-# platform.
-
-# check _convert_flags
-my %flag_to_value = (
-	pid     => Unix::Syslog::LOG_PID(),
-	ndelay  => Unix::Syslog::LOG_NDELAY(),
-);
-is( Log::Syslog::Abstract::_convert_flags( 'pid,ndelay'), 0x01 | 0x08, 'bitwise-or of all flags is as expected');
-foreach my $flag ( keys %flag_to_value ) {
-	is( Log::Syslog::Abstract::_convert_flags( $flag ), $flag_to_value{$flag}, "Flag $flag works");
-}
-
-# check _convert_facility
-# TODO: works on Linux... what about elsewhere?
-my %facility_to_value = (
-	emerg => Unix::Syslog::LOG_EMERG(),
-	panic => Unix::Syslog::LOG_EMERG(),
-	alert => Unix::Syslog::LOG_ALERT(),
-	crit => Unix::Syslog::LOG_CRIT(),
-	error => Unix::Syslog::LOG_ERR(),
-	'err' => Unix::Syslog::LOG_ERR(),
-	warning => Unix::Syslog::LOG_WARNING(),
-	notice => Unix::Syslog::LOG_NOTICE(),
-	info => Unix::Syslog::LOG_INFO(),
-	debug => Unix::Syslog::LOG_DEBUG(),
-
-	kern => Unix::Syslog::LOG_KERN(),
-	user => Unix::Syslog::LOG_USER(),
-	mail => Unix::Syslog::LOG_MAIL(),
-	daemon => Unix::Syslog::LOG_DAEMON(),
-	auth => Unix::Syslog::LOG_AUTH(),
-	syslog => Unix::Syslog::LOG_SYSLOG(),
-	lpr => Unix::Syslog::LOG_LPR(),
-	news => Unix::Syslog::LOG_NEWS(),
-	uucp => Unix::Syslog::LOG_UUCP(),
-	cron => Unix::Syslog::LOG_CRON(),
-	authpriv => Unix::Syslog::LOG_AUTHPRIV(),
-	ftp => Unix::Syslog::LOG_FTP(),
-	local0 => Unix::Syslog::LOG_LOCAL0(),
-	local1 => Unix::Syslog::LOG_LOCAL1(),
-	local2 => Unix::Syslog::LOG_LOCAL2(),
-	local3 => Unix::Syslog::LOG_LOCAL3(),
-	local4 => Unix::Syslog::LOG_LOCAL4(),
-	local5 => Unix::Syslog::LOG_LOCAL5(),
-	local6 => Unix::Syslog::LOG_LOCAL6(),
-	local7 => Unix::Syslog::LOG_LOCAL7(),
-);
-
-foreach my $facility ( keys %facility_to_value ) {
-	is( Log::Syslog::Abstract::_convert_facility( $facility ), $facility_to_value{$facility}, "Flag $facility works");
-}
-
-# Try some combinations
-is( Log::Syslog::Abstract::_convert_facility( 'notice|local7') , $facility_to_value{notice} | $facility_to_value{local7}, 'bitwise-OR works');
