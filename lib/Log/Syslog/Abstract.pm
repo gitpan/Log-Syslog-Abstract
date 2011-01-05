@@ -3,38 +3,47 @@ use warnings;
 use strict;
 use Carp;
 
-use 5.006;
-use vars qw( $VERSION );
-$VERSION = '1.101';
+use vars qw( $VERSION @ISA @EXPORT_OK );
+$VERSION = '1.200';
 
-use Sub::Exporter -setup => {
-	exports => [
-		qw( openlog syslog closelog ),
-	],
-	generator => \&_build_log_methods,
-};
+require Exporter;
+@ISA = qw( Exporter );  ## no critic(ProhibitExplicitISA)
 
-my %log_subs;
-sub _build_log_methods
+@EXPORT_OK = qw(
+	openlog
+	syslog
+	closelog
+);
+
+my $_DETECTED = 0;
+sub import
 {
-	my($args) = @_;
+	if( ! $_DETECTED ) {
 
-	if( ! exists $log_subs{$args->{name}} ) {
+		my ($openlog, $syslog, $closelog);
+
 		# Try Unix::Syslog first, then Sys::Syslog
 		eval qq{use Unix::Syslog qw( :macros ); }; ## no critic (StringyEval)
 		if( ! $@ ) {  ## no critic (PunctuationVars)
-			@log_subs{'openlog','syslog','closelog'} = _wrap_for_unix_syslog();
+			($openlog, $syslog, $closelog) = _wrap_for_unix_syslog();
 		} else {
 			eval qq{use Sys::Syslog ();}; ## no critic (StringyEval)
 			if( ! $@ ) {  ## no critic (PunctuationVars)
-				@log_subs{'openlog','syslog','closelog'} = _wrap_for_sys_syslog();
+				($openlog, $syslog, $closelog) = _wrap_for_sys_syslog();
 			} else {
 				croak q{Unable to detect either Unix::Syslog or Sys::Syslog};
 			}
 		}
+
+		no warnings 'once';  ## no critic (NoWarnings)
+		*openlog = $openlog;
+		*syslog = $syslog;
+		*closelog = $closelog;
+
+		$_DETECTED = 1;
 	}
 
-	return $log_subs{$args->{name}};
+	return __PACKAGE__->export_to_level(1, @_);
 }
 
 sub _wrap_for_unix_syslog
@@ -328,10 +337,8 @@ line, or call with package-qualified name.
 
 =head1 DEPENDENCIES
 
-L<Sub::Exporter>.
-
-Also, at least one of L<Unix::Syslog> or L<Sys::Syslog> must be
-present, or Log::Syslog::Abstract will die at use() time.
+At least one of L<Unix::Syslog> or L<Sys::Syslog> must be present, or
+Log::Syslog::Abstract will die at use() time.
 
 =head1 AUTHOR
 
@@ -385,7 +392,7 @@ L<http://search.cpan.org/dist/Log-Syslog-Abstract>
 
 =head1 COPYRIGHT & LICENSE
 
-Copyright 2007 Dave O'Neill
+Copyright 2007 Dave O'Neill, all rights reserved
 
 This program is free software; you can redistribute it and/or modify it
 under the same terms as Perl itself.

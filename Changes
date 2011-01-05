@@ -1,14 +1,17 @@
 Revision history for Log-Syslog-Abstract
 
-1.101	Wed, 29 Sep 2010 14:15:48 -0400 
+1.200	Wed, 05 Jan 2011 15:31:02 -0500
+	Revert to version that does not use Sub::Exporter, as there's really no
+	need.
+
+1.004	Thu, 09 Dec 2010 13:38:19 -0500 
+	(bugfix) Only detect and create subs on first import() call.
+
+1.003   Tue, 12 Oct 2010 15:23:06 -0400
 	(bugfix) Some Unix::Syslog constants may not exist on some platforms,
 	even if they claim to be exportable by Unix/Syslog.pm.  This caused
 	runtime crashes on Solaris -- but not during the tests, as we fake
 	everything there.
-
-1.100	Wed, 19 Mar 2008 17:16:30 -0400
-	(enhancement) Now uses Sub::Exporter instead of plain old Exporter,
-	mostly for the ability to rename methods at import-time.
 
 1.002	Tue, 01 Apr 2008 10:38:24 -0400
 	(bugfix) RHEL5 still ships with ancient Sys::Syslog.  Call

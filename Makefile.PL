@@ -1,17 +1,18 @@
 use strict;
 use warnings;
-use inc::Module::Install;
+use ExtUtils::MakeMaker;
 
-name           'Log-Syslog-Abstract';
-all_from       'lib/Log/Syslog/Abstract.pm';
-
-requires       'Sub::Exporter';
-
-recommends     'Unix::Syslog';
-recommends     'Sys::Syslog';
-
-build_requires 'Test::More';
-build_requires 'Test::Exception';
-build_requires 'Devel::Hide';
-
-WriteAll;
+WriteMakefile(
+    NAME                => 'Log::Syslog::Abstract',
+    AUTHOR              => q{Dave O'Neill <dmo@roaringpenguin.com>},
+    VERSION_FROM        => 'lib/Log/Syslog/Abstract.pm',
+    ABSTRACT_FROM       => 'lib/Log/Syslog/Abstract.pm',
+    PL_FILES            => {},
+    PREREQ_PM => {
+        'Test::More' => 0,
+        'Test::Exception' => 0,
+        'Devel::Hide' => 0,
+    },
+    dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
+    clean               => { FILES => 'Log-Syslog-Abstract-*' },
+);

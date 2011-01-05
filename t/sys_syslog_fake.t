@@ -15,7 +15,6 @@ sub _stub    { die [ q{Sys::Syslog stub}, @_ ] }
 *closelog   = \&_stub;
 *setlogsock = sub { };
 
-
 package main;
 
 BEGIN { use_ok('Log::Syslog::Abstract', qw( openlog syslog closelog )) };
